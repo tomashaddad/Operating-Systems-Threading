@@ -7,35 +7,64 @@ BIN_PATH := bin
 OBJ_PATH := obj
 SRC_PATH := src
 
+OBJ_PATHS := \
+	obj/common \
+	obj/task1 \
+	obj/task2 \
+	obj/task3 \
+	obj/task4 \
+	obj/task5
+
 TARGET_NAME := a1
 TARGET_PATH := $(BIN_PATH)/$(TARGET_NAME)
 
-# list of source files in /src (.cpp files)
-SRC := $(foreach file, $(wildcard $(SRC_PATH)/*.cpp), $(notdir $(file)))
+COMMON_DIR := $(SRC_PATH)/common
+TASK1_DIR := $(SRC_PATH)/task1
+TASK2_DIR := $(SRC_PATH)/task2
+TASK3_DIR := $(SRC_PATH)/task3
+TASK4_DIR := $(SRC_PATH)/task4
+TASK5_DIR := $(SRC_PATH)/task5
 
-# list of obj files based on the above list of source files
-# prepended with obj/
-# prepend OBJ_PATH and replace ".cpp" with ".o" in all of the items in the SRC variable
+TASK1_TARGET := $(BIN_PATH)/task1
+TASK2_TARGET := $(BIN_PATH)/task2
+TASK3_TARGET := $(BIN_PATH)/task3
+TASK4_TARGET := $(BIN_PATH)/task4
+TASK5_TARGET := $(BIN_PATH)/task5
+
+SRC := $(foreach file, $(wildcard $(SRC_PATH)/*.cpp), $(notdir $(file)))
 OBJ := $(addprefix $(OBJ_PATH)/, $(SRC:.cpp=.o))
 
-default: makedir all
+list_cpp_in = $(foreach file, $(wildcard $(1)/*.cpp), $(notdir $(file)))
+format_obj = $(addprefix $(OBJ_PATH)/$(1)/, $(2:.cpp=.o))
+
+TASK1_CPP = $(call list_cpp_in, $(TASK1_DIR))
+TASK2_CPP = $(call list_cpp_in, $(TASK2_DIR))
+COMMON_CPP = $(call list_cpp_in, $(COMMON_DIR))
+
+TASK1_OBJ := $(call format_obj,task1,$(TASK1_CPP))
+TASK2_OBJ := $(call format_obj,task2,$(TASK2_CPP))
+COMMON_OBJ := $(call format_obj,common,$(COMMON_CPP))
 
 makedir:
-	@mkdir -p $(BIN_PATH) $(OBJ_PATH) $(DBG_PATH)
+	@mkdir -p $(BIN_PATH) $(OBJ_PATHS) $(DBG_PATH)
 
-all: $(TARGET_PATH)  # expands to a1
+task1: $(TASK1_TARGET)
+task2: $(TASK2_TARGET)
+task3: $(TASK3_TARGET)
+task4: $(TASK4_TARGET)
+task5: $(TASK5_TARGET)
 
-# $(OBJ) expands to all obj files in the /obj directory
-# these are named obj/a.o, obj/b.o, etc., and each call the next rule below
+$(TASK1_TARGET): $(COMMON_OBJ) $(TASK1_OBJ)
+	$(CC) -o $@ $^ $(CCFLAGS)
 
-# $@ outputs the target (here, $(TARGET_NAME))
-# $^ outputs the list of sources (here, $(OBJ))
+$(TASK2_TARGET): $(COMMON_OBJ) $(filter-out obj/task1/main.o, $(TASK1_OBJ)) $(TASK2_OBJ)
+	$(CC) -o $@ $^ $(CCFLAGS)
 
-# this runs after all of the obj files are created below
-$(TARGET_PATH): $(OBJ)
-	$(CC) -o $@ $(OBJ) $(CCFLAGS)
-
-$(OBJ_PATH)/%.o: $(SRC_PATH)/%.cpp
+$(OBJ_PATH)/task1/%.o: $(TASK1_DIR)/%.cpp
 	$(CC) $(CCOBJFLAGS) -o $@ $<
 
-# TODO: CLEAN
+$(OBJ_PATH)/task2/%.o: $(TASK2_DIR)/%.cpp
+	$(CC) $(CCOBJFLAGS) -o $@ $<
+
+$(OBJ_PATH)/common/%.o: $(COMMON_DIR)/%.cpp
+	$(CC) $(CCOBJFLAGS) -o $@ $<
