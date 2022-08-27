@@ -1,6 +1,6 @@
 #include "../task1/Task1.h"
-#include "Task2.h"
 #include "../common/Profiler.h"
+#include "Task2.h"
 
 #include <filesystem>
 #include <iostream>
@@ -38,7 +38,10 @@ int main(int argc, char **argv)
     std::string output(argv[2]);
 
     Task1::TaskFilter(argv[1], argv[2]);
-    Task2::map2(output);
+
+    Task2 task2(argv[2]);
+    task2.map2();
+    // task2.reduce2();
 
     profiler.stop();
 

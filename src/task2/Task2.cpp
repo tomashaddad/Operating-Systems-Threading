@@ -11,21 +11,51 @@
 #include <unistd.h>
 #include <wait.h>
 
+#include <algorithm>
+#include <iterator>
+
 #define MIN_LENGTH 3
 #define MAX_LENGTH 15
 
-void Task2::map2(const std::string &wordlist)
+Task2::Task2(const std::string &wordlist) : m_wordlist(wordlist)
 {
-    // std::map<int, std::vector<std::string>> lists;
-    // std::ifstream in(wordlist);
+    std::ifstream in(wordlist);
+    std::string line;
+    while (std::getline(in, line))
+    {
+        m_lists[line.length()].push_back(line);
+    }
+}
 
-    // int i = 0;
-    // std::string line;
-    // while (std::getline(in, line))
-    // {
-    //     lists[line.length()].push_back(line);
-    // }
+std::vector<std::string> Task2::sortFrom(int charPos)
+{
+    auto start = std::begin(m_lists[charPos]);
+    auto end = std::end(m_lists[charPos]);
+    std::sort(start, end,
+              [](const std::string &a, const std::string &b)
+              { return a.substr(2) < b.substr(2); });
+    return m_lists[charPos];
+}
 
+void Task2::writeToFile(int charPos, const std::vector<std::string> &list)
+{
+    std::string dest = "src/task2/sorted/sorted_" + std::to_string(charPos) + ".txt";
+    std::ofstream out(dest);
+
+    if (!out)
+    {
+        std::cerr << "Failed to open output stream." << std::endl;
+        throw std::runtime_error("Outstream failed to open");
+    }
+
+    for (const auto &word : list)
+    {
+        out << word << std::endl;
+    }
+}
+
+void Task2::map2()
+{
     pid_t pid;
     pid_t waitPid;
 
@@ -41,24 +71,29 @@ void Task2::map2(const std::string &wordlist)
         else if (pid == 0) // child
         {
             id = i;
-            break;
+
+            std::cout << "Child (PID " << getpid() << ") created and delegated to "
+                      << id << " character strings. Creating ..." << std::endl;
+
+            auto sorted = sortFrom(i);
+            writeToFile(i, sorted);
+
+            exit(1);
         }
     }
 
-    std::cout << "Child process " << getpid() << ": " << id << std::endl;
-
     int status = 0;
+    // wait will return > 0 so long as there is at least one child process
     while ((waitPid = wait(&status)) > 0)
     {
-        std::cout << "Child process " << waitPid << " exited with status " << WEXITSTATUS(status) << std::endl;
+        std::cout << "Child process " << waitPid << " exited with status "
+                  << WEXITSTATUS(status) << std::endl;
     }
 
-    if (id == 0)
-    {
-        std::cout << "I am the parent! " << getpid() << std::endl;
-    }
-    else
-    {
-        exit(1);
-    }
+    std::cout << "All child processes have exited. Parent (PID " << getpid()
+              << ") will now begin sorting." << std::endl;
+}
+
+void Task2::reduce2()
+{
 }
