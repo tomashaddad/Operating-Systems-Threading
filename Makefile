@@ -39,10 +39,12 @@ format_obj = $(addprefix $(OBJ_PATH)/$(1)/, $(2:.cpp=.o))
 
 TASK1_CPP = $(call list_cpp_in, $(TASK1_DIR))
 TASK2_CPP = $(call list_cpp_in, $(TASK2_DIR))
+TASK3_CPP = $(call list_cpp_in, $(TASK3_DIR))
 COMMON_CPP = $(call list_cpp_in, $(COMMON_DIR))
 
 TASK1_OBJ := $(call format_obj,task1,$(TASK1_CPP))
 TASK2_OBJ := $(call format_obj,task2,$(TASK2_CPP))
+TASK3_OBJ := $(call format_obj,task3,$(TASK3_CPP))
 COMMON_OBJ := $(call format_obj,common,$(COMMON_CPP))
 
 makedir:
@@ -54,16 +56,26 @@ task3: $(TASK3_TARGET)
 task4: $(TASK4_TARGET)
 task5: $(TASK5_TARGET)
 
+######### LINKING TASKS
+
 $(TASK1_TARGET): $(COMMON_OBJ) $(TASK1_OBJ)
 	$(CC) -o $@ $^ $(CCFLAGS)
 
 $(TASK2_TARGET): $(COMMON_OBJ) $(filter-out obj/task1/main.o, $(TASK1_OBJ)) $(TASK2_OBJ)
 	$(CC) -o $@ $^ $(CCFLAGS)
 
+$(TASK3_TARGET): $(COMMON_OBJ) $(filter-out obj/task1/main.o, $(TASK1_OBJ)) $(TASK3_OBJ)
+	$(CC) -o $@ $^ $(CCFLAGS)
+
+######### COMPILING TASKS
+
 $(OBJ_PATH)/task1/%.o: $(TASK1_DIR)/%.cpp
 	$(CC) $(CCOBJFLAGS) -o $@ $<
 
 $(OBJ_PATH)/task2/%.o: $(TASK2_DIR)/%.cpp
+	$(CC) $(CCOBJFLAGS) -o $@ $<
+
+$(OBJ_PATH)/task3/%.o: $(TASK3_DIR)/%.cpp
 	$(CC) $(CCOBJFLAGS) -o $@ $<
 
 $(OBJ_PATH)/common/%.o: $(COMMON_DIR)/%.cpp
