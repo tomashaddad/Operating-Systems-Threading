@@ -41,11 +41,11 @@ int main(int argc, char **argv)
 
     Task2 task2(argv[2]);
     task2.map2();
-    // task2.reduce2();
+    task2.reduce2();
 
     profiler.stop();
 
-    std::cout << profiler.getDuration() << std::endl;
+    std::cout << "Program executed in " << profiler.getDuration() << " ms." << std::endl;
 
     return EXIT_SUCCESS;
 }
