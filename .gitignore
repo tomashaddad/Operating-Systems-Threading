@@ -4,6 +4,7 @@
 # Specific to me
 
 bin/
+valgrind*.txt
 
 ### C++ ###
 # Prerequisites

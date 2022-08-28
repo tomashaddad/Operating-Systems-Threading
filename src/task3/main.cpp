@@ -1,5 +1,6 @@
 #include <pthread.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -15,25 +16,46 @@
 
 std::vector<std::string> globalWords;
 
+struct ThreadData {
+    int length;
+    std::vector<int>& indices;
+};
+
 void* sort(void* arg) {
-    int* wordLength = (int*)arg;
-    std::cout << "I am joining word length " << *wordLength << std::endl;
-    delete wordLength;
-    wordLength = nullptr;
+    ThreadData* data = (ThreadData*)arg;
+    std::cout << "I am joining word length " << data->length << std::endl;
+
+    auto start = std::begin(data->indices);
+    auto end = std::end(data->indices);
+
+    // Indices in the ThreadData struct is a reference, so this is done in-place
+    std::sort(start, end, [](const int& a, const int& b) {
+        return globalWords[a].substr(2) < globalWords[b].substr(2);
+    });
+
+    if (data->length == 3) {
+        std::cout << "First 10 words: " << std::endl;
+        for (int i = 0; i < 10; ++i) {
+            std::cout << globalWords[data->indices[i]] << std::endl;
+        }
+    }
+
+    delete data;
+    data = nullptr;
     return 0;
 }
 
 void* map3(void* arg) {
-    std::map<int, std::vector<std::string>> lists;
+    std::map<int, std::vector<int>> indices;
     pthread_t threads[MAX_LENGTH - MIN_LENGTH + 1];
 
-    for (const auto& word : globalWords) {
-        lists[word.length()].push_back(word);
+    for (std::size_t i = 0; i < globalWords.size(); ++i) {
+        indices[globalWords[i].length()].push_back(i);
     }
 
     for (int length = MIN_LENGTH; length <= MAX_LENGTH; ++length) {
-        int* lengthPtr = new int(length);
-        pthread_create(&threads[length - MIN_LENGTH], NULL, &sort, lengthPtr);
+        ThreadData* data = new ThreadData{length, indices[length]};
+        pthread_create(&threads[length - MIN_LENGTH], NULL, &sort, data);
     }
 
     for (int length = MIN_LENGTH; length <= MAX_LENGTH; ++length) {
