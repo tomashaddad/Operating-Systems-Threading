@@ -4,9 +4,8 @@
 #include <string>
 
 class Task1 {
-public:
+   public:
     static void TaskFilter(const std::string& input, const std::string& output);
 };
 
-
-#endif // Task1.h
+#endif  // Task1.h

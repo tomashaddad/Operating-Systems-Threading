@@ -1,6 +1,48 @@
+#include <filesystem>
 #include <iostream>
 
-int main(void)
-{
+#include "../common/Profiler.h"
+#include "../task1/Task1.h"
+
+void* map3(void* arg) {}
+
+void* reduce(void* arg) {}
+
+void print_arguments(int argc, char* argv[]) {
+    std::cout << "Arguments: [ ";
+
+    for (auto i = 1; i < argc; ++i) {
+        std::cout << argv[i] << (i == argc - 1 ? "" : ", ");
+    }
+
+    std::cout << " ]" << std::endl;
+}
+
+int main(int argc, char** argv) {
+    if (argc != 3) {
+        std::cout << "Two arguments are required, but " << argc - 1
+                  << " were provided." << std::endl;
+        print_arguments(argc, argv);
+        return EXIT_FAILURE;
+    }
+
+    std::filesystem::path cwd = std::filesystem::current_path();
+
+    std::cout << "The current working directory is: " << cwd << std::endl;
+    std::cout << "Running code with arguments: ";
+    print_arguments(argc, argv);
+
+    Profiler profiler;
+    profiler.start();
+
+    std::string output(argv[2]);
+
+    Task1::TaskFilter(argv[1], argv[2]);
+
+    profiler.stop();
+
+    std::cout << "Program executed in " << profiler.getDuration() << " ms."
+              << std::endl;
+
     return EXIT_SUCCESS;
 }

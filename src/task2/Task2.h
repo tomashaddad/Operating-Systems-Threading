@@ -1,17 +1,16 @@
 #ifndef TASK2_H
 #define TASK2_H
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
-class Task2
-{
-public:
+class Task2 {
+   public:
     Task2(const std::string &wordlist);
     void map2();
     void reduce2();
 
-private:
+   private:
     std::vector<std::string> sortFrom(int charPos);
     void writeToFile(int charPos, const std::vector<std::string> &list);
 
@@ -19,4 +18,4 @@ private:
     std::string m_wordlist;
 };
 
-#endif // Task2.h
+#endif  // Task2.h

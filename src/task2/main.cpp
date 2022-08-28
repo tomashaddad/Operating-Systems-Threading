@@ -1,27 +1,24 @@
-#include "../task1/Task1.h"
-#include "../common/Profiler.h"
-#include "Task2.h"
-
 #include <filesystem>
 #include <iostream>
 
-void print_arguments(int argc, char *argv[])
-{
+#include "../common/Profiler.h"
+#include "../task1/Task1.h"
+#include "Task2.h"
+
+void print_arguments(int argc, char *argv[]) {
     std::cout << "Arguments: [ ";
 
-    for (auto i = 1; i < argc; ++i)
-    {
+    for (auto i = 1; i < argc; ++i) {
         std::cout << argv[i] << (i == argc - 1 ? "" : ", ");
     }
 
     std::cout << " ]" << std::endl;
 }
 
-int main(int argc, char **argv)
-{
-    if (argc != 3)
-    {
-        std::cout << "Two arguments are required, but " << argc - 1 << " were provided." << std::endl;
+int main(int argc, char **argv) {
+    if (argc != 3) {
+        std::cout << "Two arguments are required, but " << argc - 1
+                  << " were provided." << std::endl;
         print_arguments(argc, argv);
         return EXIT_FAILURE;
     }
@@ -45,7 +42,8 @@ int main(int argc, char **argv)
 
     profiler.stop();
 
-    std::cout << "Program executed in " << profiler.getDuration() << " ms." << std::endl;
+    std::cout << "Program executed in " << profiler.getDuration() << " ms."
+              << std::endl;
 
     return EXIT_SUCCESS;
 }

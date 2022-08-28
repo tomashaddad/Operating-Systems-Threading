@@ -1,7 +1,8 @@
 #include "Task1.h"
-#include <iostream>
-#include <fstream>
+
 #include <cctype>
+#include <fstream>
+#include <iostream>
 
 void Task1::TaskFilter(const std::string& input, const std::string& output) {
     std::ifstream in(input);
