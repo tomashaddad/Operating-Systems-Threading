@@ -1,4 +1,8 @@
+#include <fcntl.h>
 #include <pthread.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <filesystem>
@@ -33,12 +37,18 @@ void* sort(void* arg) {
         return globalWords[a].substr(2) < globalWords[b].substr(2);
     });
 
-    if (data->length == 3) {
-        std::cout << "First 10 words: " << std::endl;
-        for (int i = 0; i < 10; ++i) {
-            std::cout << globalWords[data->indices[i]] << std::endl;
-        }
+    std::string fifo = "src/task3/sorted/sorted_" + std::to_string(data->length);
+    const char* fifo_cstr = fifo.c_str();
+
+    mkfifo(fifo_cstr, 0666);
+    auto descriptor = open(fifo_cstr, O_WRONLY);
+
+    for (auto i : data->indices) {
+        std::cout << "Writing " << globalWords[i].c_str() << " to " << fifo << std::endl;
+        write(descriptor, globalWords[i].c_str(), globalWords[i].size());
     }
+
+    close(descriptor);
 
     delete data;
     data = nullptr;
@@ -46,6 +56,7 @@ void* sort(void* arg) {
 }
 
 void* map3(void* arg) {
+    // A mapping of word lengths to a vector of indices in the globalWords vector
     std::map<int, std::vector<int>> indices;
     pthread_t threads[MAX_LENGTH - MIN_LENGTH + 1];
 
@@ -65,10 +76,23 @@ void* map3(void* arg) {
     return 0;
 }
 
-void* reduce3(void* arg) { return 0; }
+void* reduce3(void* arg) {
+    std::cout << "I am in the reduce function!" << std::endl;
 
-void populateValidWords(std::string wordlist,
-                        std::vector<std::string>& validWords) {
+    auto descriptor = open("src/task3/sorted/sorted_3", O_RDONLY);
+    char word[3];
+
+    for (int i = 0; i < 10; ++i) {
+        read(descriptor, &word, sizeof(char) * 3);
+        std::cout << "Read word " << word << std::endl;
+    }
+
+    close(descriptor);
+
+    return 0;
+}
+
+void populateValidWords(std::string wordlist, std::vector<std::string>& validWords) {
     std::ifstream in(wordlist);
 
     if (!in) {
@@ -94,8 +118,8 @@ void print_arguments(int argc, char* argv[]) {
 
 int main(int argc, char** argv) {
     if (argc != 3) {
-        std::cout << "Two arguments are required, but " << argc - 1
-                  << " were provided." << std::endl;
+        std::cout << "Two arguments are required, but " << argc - 1 << " were provided."
+                  << std::endl;
         print_arguments(argc, argv);
         return EXIT_FAILURE;
     }
@@ -148,8 +172,7 @@ int main(int argc, char** argv) {
 
     profiler.stop();
 
-    std::cout << "Program executed in " << profiler.getDuration() << " ms."
-              << std::endl;
+    std::cout << "Program executed in " << profiler.getDuration() << " ms." << std::endl;
 
     return EXIT_SUCCESS;
 }
