@@ -17,12 +17,22 @@
 
 #define MIN_LENGTH 3
 #define MAX_LENGTH 15
+#define NUM_LENGTHS MAX_LENGTH - MIN_LENGTH + 1
 
 std::vector<std::string> globalWords;
+
+pthread_mutex_t g_mutexDescriptors;
+pthread_cond_t g_condFifosReady;
+int g_counter = 0;
 
 struct ThreadData {
     int length;
     std::vector<int>& indices;
+};
+
+struct ReduceData {
+    int length;
+    std::vector<std::string>& words;
 };
 
 void* sort(void* arg) {
@@ -41,24 +51,28 @@ void* sort(void* arg) {
     const char* fifo_cstr = fifo.c_str();
 
     mkfifo(fifo_cstr, 0666);
-    auto descriptor = open(fifo_cstr, O_WRONLY);
+    pthread_mutex_lock(&g_mutexDescriptors);
+    ++g_counter;
+    pthread_cond_signal(&g_condFifosReady);
+    pthread_mutex_unlock(&g_mutexDescriptors);
 
+    auto descriptor = open(fifo_cstr, O_WRONLY);
+    int counter = 0;
     for (auto i : data->indices) {
-        std::cout << "Writing " << globalWords[i].c_str() << " to " << fifo << std::endl;
         write(descriptor, globalWords[i].c_str(), globalWords[i].size());
+        counter++;
     }
 
     close(descriptor);
 
-    delete data;
-    data = nullptr;
-    return 0;
+    return data;
 }
 
 void* map3(void* arg) {
+    std::cout << "map3 thread started!" << std::endl;
     // A mapping of word lengths to a vector of indices in the globalWords vector
     std::map<int, std::vector<int>> indices;
-    pthread_t threads[MAX_LENGTH - MIN_LENGTH + 1];
+    pthread_t threads[NUM_LENGTHS];
 
     for (std::size_t i = 0; i < globalWords.size(); ++i) {
         indices[globalWords[i].length()].push_back(i);
@@ -69,22 +83,54 @@ void* map3(void* arg) {
         pthread_create(&threads[length - MIN_LENGTH], NULL, &sort, data);
     }
 
+    ThreadData* mapData;
+
     for (int length = MIN_LENGTH; length <= MAX_LENGTH; ++length) {
-        pthread_join(threads[length - MIN_LENGTH], NULL);
+        pthread_join(threads[length - MIN_LENGTH], (void**)&mapData);
+        std::cout << "Joined thread for word length " << mapData->length << std::endl;
+        delete mapData;
     }
 
     return 0;
 }
 
 void* reduce3(void* arg) {
-    std::cout << "I am in the reduce function!" << std::endl;
+    std::cout << "reduce3 thread started!" << std::endl;
 
-    auto descriptor = open("src/task3/sorted/sorted_3", O_RDONLY);
-    char word[3];
+    // std::vector<std::vector<std::string>> sortedLists;
 
-    for (int i = 0; i < 10; ++i) {
-        read(descriptor, &word, sizeof(char) * 3);
-        std::cout << "Read word " << word << std::endl;
+    pthread_mutex_lock(&g_mutexDescriptors);
+    while (g_counter < NUM_LENGTHS) {
+        pthread_cond_wait(&g_condFifosReady, &g_mutexDescriptors);
+        std::cout << "Total FIFOs created: " << g_counter << std::endl;
+    }
+    pthread_mutex_unlock(&g_mutexDescriptors);
+
+    // std::array<int, NUM_LENGTHS> descriptors;
+
+    // for (std::size_t i = 0; i < descriptors.size(); ++i) {
+    //     std::string fifo = "src/task3/sorted/sorted_" + std::to_string(i + MIN_LENGTH);
+    //     descriptors[i] = open(fifo.c_str(), O_RDONLY);
+    // }
+    // exit(0);
+
+    std::cout << "Ready to read!" << std::endl;
+
+    auto descriptor = open("src/task3/sorted/sorted_4", O_RDONLY);
+
+    if (descriptor == -1) {
+        std::cout << "Failed to open!" << std::endl;
+    }
+
+    char word[4];
+
+    while (true) {
+        if (read(descriptor, &word, sizeof(char) * 4)) {
+            std::cout << "Read word " << word << std::endl;
+        } else {
+            std::cout << "Finished reading!" << std::endl;
+            break;
+        }
     }
 
     close(descriptor);
@@ -147,28 +193,20 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    std::cout << "Map thread created" << std::endl;
-
     if (pthread_create(&reduce, NULL, &reduce3, NULL)) {
         std::cout << "Error creating reduce3 thread" << std::endl;
         return EXIT_FAILURE;
     }
-
-    std::cout << "Reduce thread created" << std::endl;
 
     if (pthread_join(map, NULL)) {
         std::cout << "Error joining map3 thread" << std::endl;
         return EXIT_FAILURE;
     }
 
-    std::cout << "Map thread joined" << std::endl;
-
     if (pthread_join(reduce, NULL)) {
         std::cout << "Error joining reduce3 thread" << std::endl;
         return EXIT_FAILURE;
     }
-
-    std::cout << "Reduce thread joined" << std::endl;
 
     profiler.stop();
 
