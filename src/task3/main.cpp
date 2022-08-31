@@ -37,7 +37,6 @@ struct ReduceData {
 
 void* sort(void* arg) {
     ThreadData* data = (ThreadData*)arg;
-    std::cout << "I am joining word length " << data->length << std::endl;
 
     auto start = std::begin(data->indices);
     auto end = std::end(data->indices);
@@ -87,17 +86,48 @@ void* map3(void* arg) {
 
     for (int length = MIN_LENGTH; length <= MAX_LENGTH; ++length) {
         pthread_join(threads[length - MIN_LENGTH], (void**)&mapData);
-        std::cout << "Joined thread for word length " << mapData->length << std::endl;
         delete mapData;
     }
+
+    std::cout << "Successfully joined all sort threads!" << std::endl;
 
     return 0;
 }
 
+void* readFifo(void* arg) {
+    ReduceData* data = (ReduceData*)arg;
+
+    std::string fifo = "src/task3/sorted/sorted_" + std::to_string(data->length);
+    std::cout << "Reading from " << fifo << std::endl;
+
+    auto descriptor = open(fifo.c_str(), O_RDONLY);
+
+    if (descriptor == -1) {
+        std::cout << "Failed to create read only descriptor for FIFO " << fifo << std::endl;
+        return data;
+    }
+
+    char* word = new char[data->length];
+
+    while (true) {
+        if (read(descriptor, word, sizeof(char) * data->length)) {
+            data->words.push_back(std::string(word));
+        } else {
+            // Finished reading from FIFO
+            break;
+        }
+    }
+
+    close(descriptor);
+    delete word;
+
+    std::cout << "Successfully read " << data->words.size() << " words from " << fifo << std::endl;
+
+    return data;
+}
+
 void* reduce3(void* arg) {
     std::cout << "reduce3 thread started!" << std::endl;
-
-    // std::vector<std::vector<std::string>> sortedLists;
 
     pthread_mutex_lock(&g_mutexDescriptors);
     while (g_counter < NUM_LENGTHS) {
@@ -106,34 +136,84 @@ void* reduce3(void* arg) {
     }
     pthread_mutex_unlock(&g_mutexDescriptors);
 
-    // std::array<int, NUM_LENGTHS> descriptors;
+    // All FIFOS are ready, so we can start reading them
 
-    // for (std::size_t i = 0; i < descriptors.size(); ++i) {
-    //     std::string fifo = "src/task3/sorted/sorted_" + std::to_string(i + MIN_LENGTH);
-    //     descriptors[i] = open(fifo.c_str(), O_RDONLY);
-    // }
-    // exit(0);
+    pthread_t threads[NUM_LENGTHS];
+    std::vector<std::vector<std::string>> sortedLists(NUM_LENGTHS);
 
-    std::cout << "Ready to read!" << std::endl;
-
-    auto descriptor = open("src/task3/sorted/sorted_4", O_RDONLY);
-
-    if (descriptor == -1) {
-        std::cout << "Failed to open!" << std::endl;
+    for (int length = 3; length <= MAX_LENGTH; ++length) {
+        ReduceData* data = new ReduceData{length, sortedLists[length - MIN_LENGTH]};
+        pthread_create(&threads[length - MIN_LENGTH], NULL, &readFifo, data);
     }
 
-    char word[4];
+    ReduceData* reduceData;
 
-    while (true) {
-        if (read(descriptor, &word, sizeof(char) * 4)) {
-            std::cout << "Read word " << word << std::endl;
-        } else {
-            std::cout << "Finished reading!" << std::endl;
+    for (int length = MIN_LENGTH; length <= MAX_LENGTH; ++length) {
+        pthread_join(threads[length - MIN_LENGTH], (void**)&reduceData);
+        delete reduceData;
+    }
+
+    int sum = 0;
+    for (auto& list : sortedLists) {
+        sum += list.size();
+    }
+
+    std::cout << "Successfully joined all read threads! Total words: " << sum << std::endl;
+    std::cout << "Merging to output file..." << std::endl;
+
+    std::ofstream out("src/task3/sorted/sorted.txt");
+
+    if (!out) {
+        std::cerr << "Failed to open output stream." << std::endl;
+        throw std::runtime_error("Outstream failed to open");
+    }
+
+    std::vector<size_t> indices(sortedLists.size(), 0);
+    std::vector<std::string> currentWords;
+
+    // Repeatedly build a vector containing all words to compare. A word is
+    // selected based on lexicographical ordering of the 3rd letter and beyond,
+    // and the length of the chosen word is used to increment the corresponding
+    // indices entry.
+
+    int counter = 0;
+    while (counter < sum) {
+        for (size_t i = 0; i < sortedLists.size(); ++i) {
+            if (indices[i] < sortedLists[i].size()) {
+                currentWords.push_back(sortedLists[i][indices[i]]);
+            }
+        }
+
+        if (currentWords.empty()) {
             break;
         }
+
+        auto min = std::min_element(
+            std::begin(currentWords), std::end(currentWords),
+            [](const std::string& a, const std::string& b) { return a.substr(2) < b.substr(2); });
+        out << *min << std::endl;
+
+        int length = min->length() - MIN_LENGTH;
+
+        indices[length]++;
+
+        // Note that vector.clear() does not free the memory, so this is still
+        // memory efficient
+        currentWords.clear();
+        counter++;
     }
 
-    close(descriptor);
+    if (counter > sum) {
+        std::cerr << "ERROR: Program has tried to sort more words than there "
+                     "are in the wordlist. "
+                  << "Abording Task2::reduce2() ..." << std::endl;
+    } else if (counter == sum) {
+        std::cout << "Program has successfully sorted all words." << std::endl;
+    } else {
+        std::cerr << "ERROR: Program has tried to sort fewer words than there "
+                     "are in the wordlist."
+                  << std::endl;
+    }
 
     return 0;
 }
