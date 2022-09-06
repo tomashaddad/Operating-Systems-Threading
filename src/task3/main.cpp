@@ -16,6 +16,7 @@
 #include "../common/constants.h"
 #include "../common/readwrite.h"
 #include "../common/sort.h"
+#include "../common/time.h"
 #include "../task1/Task1.h"
 
 std::vector<std::string> globalWords;
@@ -67,7 +68,7 @@ void* sort(void* arg) {
 }
 
 void* map3(void* arg) {
-    std::cout << "map3 thread started!" << std::endl;
+    std::cout << utility::timestamp() << "map3 thread started!" << std::endl;
     // A mapping of word lengths to a vector of indices in the globalWords vector
     std::map<int, std::vector<int>> indices;
     pthread_t threads[constants::NUM_LENGTHS];
@@ -88,7 +89,7 @@ void* map3(void* arg) {
         delete mapData;
     }
 
-    std::cout << "Successfully joined all sort threads!" << std::endl;
+    std::cout << utility::timestamp() << "Successfully joined all sort threads!" << std::endl;
 
     return 0;
 }
@@ -97,12 +98,13 @@ void* readFifo(void* arg) {
     ReduceData* data = (ReduceData*)arg;
 
     std::string fifo = "src/task3/sorted/sorted_" + std::to_string(data->length);
-    std::cout << "Reading from " << fifo << std::endl;
+    std::cout << utility::timestamp() << "Reading from " << fifo << std::endl;
 
     auto descriptor = open(fifo.c_str(), O_RDONLY);
 
     if (descriptor == -1) {
-        std::cout << "Failed to create read only descriptor for FIFO " << fifo << std::endl;
+        std::cout << utility::timestamp() << "Failed to create read only descriptor for FIFO "
+                  << fifo << std::endl;
         return data;
     }
 
@@ -120,18 +122,19 @@ void* readFifo(void* arg) {
     close(descriptor);
     delete word;
 
-    std::cout << "Successfully read " << data->words.size() << " words from " << fifo << std::endl;
+    std::cout << utility::timestamp() << "Successfully read " << data->words.size()
+              << " words from " << fifo << std::endl;
 
     return data;
 }
 
 void* reduce3(void* arg) {
-    std::cout << "reduce3 thread started!" << std::endl;
+    std::cout << utility::timestamp() << "reduce3 thread started!" << std::endl;
 
     pthread_mutex_lock(&g_mutexDescriptors);
     while (g_counter < constants::NUM_LENGTHS) {
         pthread_cond_wait(&g_condFifosReady, &g_mutexDescriptors);
-        std::cout << "Total FIFOs created: " << g_counter << std::endl;
+        std::cout << utility::timestamp() << "Total FIFOs created: " << g_counter << std::endl;
     }
     pthread_mutex_unlock(&g_mutexDescriptors);
 
@@ -158,7 +161,7 @@ void* reduce3(void* arg) {
 }
 
 void print_arguments(int argc, char* argv[]) {
-    std::cout << "Arguments: [ ";
+    std::cout << utility::timestamp() << "Arguments: [ ";
 
     for (auto i = 1; i < argc; ++i) {
         std::cout << argv[i] << (i == argc - 1 ? "" : ", ");
@@ -169,16 +172,16 @@ void print_arguments(int argc, char* argv[]) {
 
 int main(int argc, char** argv) {
     if (argc != 3) {
-        std::cout << "Two arguments are required, but " << argc - 1 << " were provided."
-                  << std::endl;
+        std::cout << utility::timestamp() << "Two arguments are required, but " << argc - 1
+                  << " were provided." << std::endl;
         print_arguments(argc, argv);
         return EXIT_FAILURE;
     }
 
     std::filesystem::path cwd = std::filesystem::current_path();
 
-    std::cout << "The current working directory is: " << cwd << std::endl;
-    std::cout << "Running code with arguments: ";
+    std::cout << utility::timestamp() << "The current working directory is: " << cwd << std::endl;
+    std::cout << utility::timestamp() << "Running code with arguments: ";
     print_arguments(argc, argv);
 
     Profiler profiler;
@@ -194,28 +197,29 @@ int main(int argc, char** argv) {
     pthread_t map, reduce;
 
     if (pthread_create(&map, NULL, &map3, NULL)) {
-        std::cout << "Error creating map3 thread" << std::endl;
+        std::cout << utility::timestamp() << "Error creating map3 thread" << std::endl;
         return EXIT_FAILURE;
     }
 
     if (pthread_create(&reduce, NULL, &reduce3, NULL)) {
-        std::cout << "Error creating reduce3 thread" << std::endl;
+        std::cout << utility::timestamp() << "Error creating reduce3 thread" << std::endl;
         return EXIT_FAILURE;
     }
 
     if (pthread_join(map, NULL)) {
-        std::cout << "Error joining map3 thread" << std::endl;
+        std::cout << utility::timestamp() << "Error joining map3 thread" << std::endl;
         return EXIT_FAILURE;
     }
 
     if (pthread_join(reduce, NULL)) {
-        std::cout << "Error joining reduce3 thread" << std::endl;
+        std::cout << utility::timestamp() << "Error joining reduce3 thread" << std::endl;
         return EXIT_FAILURE;
     }
 
     profiler.stop();
 
-    std::cout << "Program executed in " << profiler.getDuration() << " ms." << std::endl;
+    std::cout << utility::timestamp() << "Program executed in " << profiler.getDuration() << " ms."
+              << std::endl;
 
     return EXIT_SUCCESS;
 }

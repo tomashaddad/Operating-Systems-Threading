@@ -3,11 +3,13 @@
 #include <fstream>
 #include <iostream>
 
+#include "time.h"
+
 void utility::writeListToFile(const std::vector<std::string>& list, std::string& output) {
     std::ofstream out(output);
 
     if (!out) {
-        std::cerr << "Failed to open output stream." << std::endl;
+        std::cerr << utility::timestamp() << "Failed to open output stream." << std::endl;
         throw std::runtime_error("Outstream failed to open");
     }
 
@@ -20,8 +22,8 @@ std::vector<std::string> utility::readFileIntoVector(const std::string& file) {
     std::ifstream in(file);
 
     if (!in) {
-        std::cerr << "Failed to open input stream for file: " << file << ". Aborting ..."
-                  << std::endl;
+        std::cerr << utility::timestamp() << "Failed to open input stream for file: " << file
+                  << ". Aborting ..." << std::endl;
         throw std::runtime_error("Instream failed to open");
     }
 

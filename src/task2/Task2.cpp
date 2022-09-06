@@ -17,6 +17,7 @@
 #include "../common/constants.h"
 #include "../common/readwrite.h"
 #include "../common/sort.h"
+#include "../common/time.h"
 
 Task2::Task2(const std::string &wordlist) : m_wordlist(wordlist) {
     std::ifstream in(wordlist);
@@ -37,8 +38,9 @@ void Task2::map2() {
             continue;
         } else if (pid == 0)  // child
         {
-            std::cout << "Child (PID " << getpid() << ") created and delegated to " << i
-                      << " character strings. Creating ..." << std::endl;
+            std::cout << utility::timestamp() << "Child (PID " << getpid()
+                      << ") created and delegated to " << i << " character strings. Creating ..."
+                      << std::endl;
 
             // in-place sort from second character onwards
             utility::sortFrom(m_lists[i], 2);
@@ -53,11 +55,11 @@ void Task2::map2() {
     int status = 0;
     // wait will return > 0 so long as there is at least one child process
     while ((waitPid = wait(&status)) > 0) {
-        std::cout << "Child process " << waitPid << " exited with status " << WEXITSTATUS(status)
-                  << std::endl;
+        std::cout << utility::timestamp() << "Child process " << waitPid << " exited with status "
+                  << WEXITSTATUS(status) << std::endl;
     }
 
-    std::cout << "All child processes have exited. Parent (PID " << getpid()
+    std::cout << utility::timestamp() << "All child processes have exited. Parent (PID " << getpid()
               << ") will now begin sorting." << std::endl;
 }
 
@@ -72,7 +74,8 @@ void Task2::reduce2() {
         std::vector<std::string> list = utility::readFileIntoVector(source);
 
         sortedLists.push_back(list);
-        std::cout << "Read " << list.size() << " words from " << source << std::endl;
+        std::cout << utility::timestamp() << "Read " << list.size() << " words from " << source
+                  << std::endl;
     }
 
     utility::mergeAndOutput(sortedLists, "src/task2/sorted/sorted.txt");

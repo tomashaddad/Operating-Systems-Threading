@@ -5,18 +5,20 @@
 #include <iostream>
 #include <set>
 
+#include "../common/time.h"
+
 void Task1::TaskFilter(const std::string& input, const std::string& output) {
     std::ifstream in(input);
 
     if (!in) {
-        std::cerr << "Input file not found" << std::endl;
+        std::cerr << utility::timestamp() << "Input file not found" << std::endl;
         throw std::runtime_error("File not found");
     }
 
     std::ofstream out(output);
 
     if (!out) {
-        std::cerr << "Failed to open output stream." << std::endl;
+        std::cerr << utility::timestamp() << "Failed to open output stream." << std::endl;
         throw std::runtime_error("Outstream failed to open");
     }
 

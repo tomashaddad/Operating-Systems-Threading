@@ -2,10 +2,11 @@
 #include <iostream>
 
 #include "../common/Profiler.h"
+#include "../common/time.h"
 #include "Task1.h"
 
 void print_arguments(int argc, char *argv[]) {
-    std::cout << "Arguments: [ ";
+    std::cout << utility::timestamp() << "Arguments: [ ";
 
     for (auto i = 1; i < argc; ++i) {
         std::cout << argv[i] << (i == argc - 1 ? "" : ", ");
@@ -16,7 +17,7 @@ void print_arguments(int argc, char *argv[]) {
 
 int main(int argc, char **argv) {
     if (argc != 3) {
-        std::cout << "Two arguments are required, but " << argc - 1
+        std::cout << utility::timestamp() << "Two arguments are required, but " << argc - 1
                   << " were provided." << std::endl;
         print_arguments(argc, argv);
         return EXIT_FAILURE;
@@ -24,8 +25,8 @@ int main(int argc, char **argv) {
 
     std::filesystem::path cwd = std::filesystem::current_path();
 
-    std::cout << "The current working directory is: " << cwd << std::endl;
-    std::cout << "Running code with arguments: ";
+    std::cout << utility::timestamp() << "The current working directory is: " << cwd << std::endl;
+    std::cout << utility::timestamp() << "Running code with arguments: ";
     print_arguments(argc, argv);
 
     Profiler profiler;

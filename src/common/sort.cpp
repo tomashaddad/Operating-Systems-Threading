@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "constants.h"
+#include "time.h"
 
 void utility::mergeAndOutput(std::vector<std::vector<std::string>>& sortedLists,
                              const std::string& output) {
@@ -17,14 +18,15 @@ void utility::mergeAndOutput(std::vector<std::vector<std::string>>& sortedLists,
         sum += list.size();
     }
 
-    std::cout << "Total number of words to sort: " << sum << std::endl << std::endl;
+    std::cout << utility::timestamp() << "Total number of words to sort: " << sum << std::endl
+              << std::endl;
 
-    std::cout << "Sorting ..." << std::endl;
+    std::cout << utility::timestamp() << "Sorting ..." << std::endl;
 
     std::ofstream out(output);
 
     if (!out) {
-        std::cerr << "Failed to open output stream." << std::endl;
+        std::cerr << utility::timestamp() << "Failed to open output stream." << std::endl;
         throw std::runtime_error("Outstream failed to open");
     }
 
@@ -64,13 +66,16 @@ void utility::mergeAndOutput(std::vector<std::vector<std::string>>& sortedLists,
     }
 
     if (counter > sum) {
-        std::cerr << "ERROR: Program has tried to sort more words than there "
+        std::cerr << utility::timestamp()
+                  << "ERROR: Program has tried to sort more words than there "
                      "are in the wordlist. "
                   << "Abording Task2::reduce2() ..." << std::endl;
     } else if (counter == sum) {
-        std::cout << "Program has successfully sorted all words." << std::endl;
+        std::cout << utility::timestamp() << "Program has successfully sorted all words."
+                  << std::endl;
     } else {
-        std::cerr << "ERROR: Program has tried to sort fewer words than there "
+        std::cerr << utility::timestamp()
+                  << "ERROR: Program has tried to sort fewer words than there "
                      "are in the wordlist."
                   << std::endl;
     }

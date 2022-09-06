@@ -7,7 +7,7 @@
 #include "Task2.h"
 
 void print_arguments(int argc, char *argv[]) {
-    std::cout << "Arguments: [ ";
+    std::cout << utility::timestamp() << "Arguments: [ ";
 
     for (auto i = 1; i < argc; ++i) {
         std::cout << argv[i] << (i == argc - 1 ? "" : ", ");
@@ -17,22 +17,17 @@ void print_arguments(int argc, char *argv[]) {
 }
 
 int main(int argc, char **argv) {
-    std::cout << utility::timestamp() << "Testing" << std::endl;
-    std::cout << utility::timestamp() << "Testing again" << std::endl;
-
-    return EXIT_SUCCESS;
-
     if (argc != 3) {
-        std::cout << "Two arguments are required, but " << argc - 1 << " were provided."
-                  << std::endl;
+        std::cout << utility::timestamp() << "Two arguments are required, but " << argc - 1
+                  << " were provided." << std::endl;
         print_arguments(argc, argv);
         return EXIT_FAILURE;
     }
 
     std::filesystem::path cwd = std::filesystem::current_path();
 
-    std::cout << "The current working directory is: " << cwd << std::endl;
-    std::cout << "Running code with arguments: ";
+    std::cout << utility::timestamp() << "The current working directory is: " << cwd << std::endl;
+    std::cout << utility::timestamp() << "Running code with arguments: ";
     print_arguments(argc, argv);
 
     Profiler profiler;
@@ -48,7 +43,8 @@ int main(int argc, char **argv) {
 
     profiler.stop();
 
-    std::cout << "Program executed in " << profiler.getDuration() << " ms." << std::endl;
+    std::cout << utility::timestamp() << "Program executed in " << profiler.getDuration() << " ms."
+              << std::endl;
 
     return EXIT_SUCCESS;
 }
