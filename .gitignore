@@ -5,6 +5,7 @@
 
 bin/
 valgrind*.txt
+wordlists/
 
 ### C++ ###
 # Prerequisites
