@@ -14,6 +14,8 @@
 
 #include "../common/Profiler.h"
 #include "../common/constants.h"
+#include "../common/readwrite.h"
+#include "../common/sort.h"
 #include "../task1/Task1.h"
 
 std::vector<std::string> globalWords;
@@ -150,83 +152,9 @@ void* reduce3(void* arg) {
         delete reduceData;
     }
 
-    int sum = 0;
-    for (auto& list : sortedLists) {
-        sum += list.size();
-    }
-
-    std::cout << "Successfully joined all read threads! Total words: " << sum << std::endl;
-    std::cout << "Merging to output file..." << std::endl;
-
-    std::ofstream out("src/task3/sorted/sorted.txt");
-
-    if (!out) {
-        std::cerr << "Failed to open output stream." << std::endl;
-        throw std::runtime_error("Outstream failed to open");
-    }
-
-    std::vector<size_t> indices(sortedLists.size(), 0);
-    std::vector<std::string> currentWords;
-
-    // Repeatedly build a vector containing all words to compare. A word is
-    // selected based on lexicographical ordering of the 3rd letter and beyond,
-    // and the length of the chosen word is used to increment the corresponding
-    // indices entry.
-
-    int counter = 0;
-    while (counter < sum) {
-        for (size_t i = 0; i < sortedLists.size(); ++i) {
-            if (indices[i] < sortedLists[i].size()) {
-                currentWords.push_back(sortedLists[i][indices[i]]);
-            }
-        }
-
-        if (currentWords.empty()) {
-            break;
-        }
-
-        auto min = std::min_element(
-            std::begin(currentWords), std::end(currentWords),
-            [](const std::string& a, const std::string& b) { return a.substr(2) < b.substr(2); });
-        out << *min << std::endl;
-
-        int length = min->length() - constants::MIN_LENGTH;
-
-        indices[length]++;
-
-        // Note that vector.clear() does not free the memory, so this is still
-        // memory efficient
-        currentWords.clear();
-        counter++;
-    }
-
-    if (counter > sum) {
-        std::cerr << "ERROR: Program has tried to sort more words than there "
-                     "are in the wordlist. "
-                  << "Abording Task2::reduce2() ..." << std::endl;
-    } else if (counter == sum) {
-        std::cout << "Program has successfully sorted all words." << std::endl;
-    } else {
-        std::cerr << "ERROR: Program has tried to sort fewer words than there "
-                     "are in the wordlist."
-                  << std::endl;
-    }
+    utility::mergeAndOutput(sortedLists, "src/task3/sorted/sorted.txt");
 
     return 0;
-}
-
-void populateValidWords(std::string wordlist, std::vector<std::string>& validWords) {
-    std::ifstream in(wordlist);
-
-    if (!in) {
-        std::cerr << "Failed to open input stream " << wordlist << std::endl;
-        throw std::runtime_error("Instream failed to open");
-    }
-
-    std::string word;
-    while (std::getline(in, word)) {
-        validWords.push_back(word);
-    }
 }
 
 void print_arguments(int argc, char* argv[]) {
@@ -261,7 +189,7 @@ int main(int argc, char** argv) {
 
     Task1::TaskFilter(inputDir, outputDir);
 
-    populateValidWords(outputDir, globalWords);
+    globalWords = utility::readFileIntoVector(outputDir);
 
     pthread_t map, reduce;
 
