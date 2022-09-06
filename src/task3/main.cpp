@@ -13,11 +13,8 @@
 #include <vector>
 
 #include "../common/Profiler.h"
+#include "../common/constants.h"
 #include "../task1/Task1.h"
-
-#define MIN_LENGTH 3
-#define MAX_LENGTH 15
-#define NUM_LENGTHS MAX_LENGTH - MIN_LENGTH + 1
 
 std::vector<std::string> globalWords;
 
@@ -71,21 +68,21 @@ void* map3(void* arg) {
     std::cout << "map3 thread started!" << std::endl;
     // A mapping of word lengths to a vector of indices in the globalWords vector
     std::map<int, std::vector<int>> indices;
-    pthread_t threads[NUM_LENGTHS];
+    pthread_t threads[constants::NUM_LENGTHS];
 
     for (std::size_t i = 0; i < globalWords.size(); ++i) {
         indices[globalWords[i].length()].push_back(i);
     }
 
-    for (int length = MIN_LENGTH; length <= MAX_LENGTH; ++length) {
+    for (int length = constants::MIN_LENGTH; length <= constants::MAX_LENGTH; ++length) {
         ThreadData* data = new ThreadData{length, indices[length]};
-        pthread_create(&threads[length - MIN_LENGTH], NULL, &sort, data);
+        pthread_create(&threads[length - constants::MIN_LENGTH], NULL, &sort, data);
     }
 
     ThreadData* mapData;
 
-    for (int length = MIN_LENGTH; length <= MAX_LENGTH; ++length) {
-        pthread_join(threads[length - MIN_LENGTH], (void**)&mapData);
+    for (int length = constants::MIN_LENGTH; length <= constants::MAX_LENGTH; ++length) {
+        pthread_join(threads[length - constants::MIN_LENGTH], (void**)&mapData);
         delete mapData;
     }
 
@@ -130,7 +127,7 @@ void* reduce3(void* arg) {
     std::cout << "reduce3 thread started!" << std::endl;
 
     pthread_mutex_lock(&g_mutexDescriptors);
-    while (g_counter < NUM_LENGTHS) {
+    while (g_counter < constants::NUM_LENGTHS) {
         pthread_cond_wait(&g_condFifosReady, &g_mutexDescriptors);
         std::cout << "Total FIFOs created: " << g_counter << std::endl;
     }
@@ -138,18 +135,18 @@ void* reduce3(void* arg) {
 
     // All FIFOS are ready, so we can start reading them
 
-    pthread_t threads[NUM_LENGTHS];
-    std::vector<std::vector<std::string>> sortedLists(NUM_LENGTHS);
+    pthread_t threads[constants::NUM_LENGTHS];
+    std::vector<std::vector<std::string>> sortedLists(constants::NUM_LENGTHS);
 
-    for (int length = 3; length <= MAX_LENGTH; ++length) {
-        ReduceData* data = new ReduceData{length, sortedLists[length - MIN_LENGTH]};
-        pthread_create(&threads[length - MIN_LENGTH], NULL, &readFifo, data);
+    for (int length = 3; length <= constants::MAX_LENGTH; ++length) {
+        ReduceData* data = new ReduceData{length, sortedLists[length - constants::MIN_LENGTH]};
+        pthread_create(&threads[length - constants::MIN_LENGTH], NULL, &readFifo, data);
     }
 
     ReduceData* reduceData;
 
-    for (int length = MIN_LENGTH; length <= MAX_LENGTH; ++length) {
-        pthread_join(threads[length - MIN_LENGTH], (void**)&reduceData);
+    for (int length = constants::MIN_LENGTH; length <= constants::MAX_LENGTH; ++length) {
+        pthread_join(threads[length - constants::MIN_LENGTH], (void**)&reduceData);
         delete reduceData;
     }
 
@@ -193,7 +190,7 @@ void* reduce3(void* arg) {
             [](const std::string& a, const std::string& b) { return a.substr(2) < b.substr(2); });
         out << *min << std::endl;
 
-        int length = min->length() - MIN_LENGTH;
+        int length = min->length() - constants::MIN_LENGTH;
 
         indices[length]++;
 
