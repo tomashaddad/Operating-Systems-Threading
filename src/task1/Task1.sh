@@ -57,14 +57,18 @@ echo "Using grep to remove words with:
     - more than 15 characters"
 
 grep -a -v -e '\([a-zA-Z]\)\1\{2,\}\|[^a-zA-Z]' $1 \
-    | grep '^.\{3,15\}$' > ${prefix}_cleaned.txt
+    | grep '^.\{3,15\}$' \
+    | sort \
+    | uniq > ${prefix}_cleaned_sorted_uniq.txt
 
-echo "Sorting file, which is required for uniq to remove duplicate words."
+# Uncomment to examine outputs individually
 
-sort ${prefix}_cleaned.txt > ${prefix}_cleaned_sorted.txt
+# echo "Sorting file, which is required for uniq to remove duplicate words."
 
-echo "Removing duplicate words."
+# sort ${prefix}_cleaned.txt > ${prefix}_cleaned_sorted.txt
 
-uniq ${prefix}_cleaned_sorted.txt > ${prefix}_cleaned_sorted_uniq.txt
+# echo "Removing duplicate words."
 
-echo "Shell script complete. Output files can be found in .${output}/ folder."
+# uniq ${prefix}_cleaned_sorted.txt > ${prefix}_cleaned_sorted_uniq.txt
+
+# echo "Shell script complete. Output files can be found in .${output}/ folder."
