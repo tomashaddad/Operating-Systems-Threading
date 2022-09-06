@@ -3,6 +3,7 @@
 #include <cctype>
 #include <fstream>
 #include <iostream>
+#include <set>
 
 void Task1::TaskFilter(const std::string& input, const std::string& output) {
     std::ifstream in(input);
@@ -18,6 +19,9 @@ void Task1::TaskFilter(const std::string& input, const std::string& output) {
         std::cerr << "Failed to open output stream." << std::endl;
         throw std::runtime_error("Outstream failed to open");
     }
+
+    // Adding words to a set means that filter duplicate words
+    std::set<std::string> unique_words;
 
     std::string line;
     while (std::getline(in, line)) {
@@ -44,8 +48,12 @@ void Task1::TaskFilter(const std::string& input, const std::string& output) {
                 }
             }
             if (is_valid) {
-                out << line << std::endl;
+                unique_words.insert(line);
             }
         }
+    }
+
+    for (auto& word : unique_words) {
+        out << word << std::endl;
     }
 }
