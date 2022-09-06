@@ -30,16 +30,19 @@ void Task1::TaskFilter(const std::string& input, const std::string& output) {
             int counter = 0;
             char reference = line[0];
 
-            for (auto& current : line) {
-                if (std::isalpha(current)) {
-                    if (current == reference) {
+            for (auto& character : line) {
+                if (std::isalpha(character)) {
+                    // As long as we're still looking at the same character, if we read it three
+                    // times in a row, we mark it as invalid, and stop checking the rest of the word
+                    // Otherwise, we reset the counter and the reference character
+                    if (character == reference) {
                         counter++;
                         if (counter == 3) {
                             is_valid = false;
                             break;
                         }
                     } else {
-                        reference = current;
+                        reference = character;
                         counter = 1;
                     }
                 } else {
