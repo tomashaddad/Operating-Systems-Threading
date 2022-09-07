@@ -84,7 +84,7 @@ void utility::mergeAndOutput(std::vector<std::vector<std::string>>& sortedLists,
 void utility::sortFrom(std::vector<std::string>& list, int charPos) {
     auto start = std::begin(list);
     auto end = std::end(list);
-    std::sort(start, end, [&charPos](const std::string& a, const std::string& b) {
+    std::stable_sort(start, end, [&charPos](const std::string& a, const std::string& b) {
         return a.substr(charPos) < b.substr(charPos);
     });
 }
