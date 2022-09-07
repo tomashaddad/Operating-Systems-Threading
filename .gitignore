@@ -6,6 +6,8 @@
 bin/
 valgrind*.txt
 wordlists/
+src/task2/sorted/*
+src/task3/sorted/*
 
 ### C++ ###
 # Prerequisites
