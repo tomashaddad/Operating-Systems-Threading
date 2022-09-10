@@ -46,7 +46,7 @@ void* sort(void* arg) {
     auto end = std::end(data->indices);
 
     // Indices in the ThreadData struct is a reference, so this is done in-place
-    std::sort(start, end, [](const int& a, const int& b) {
+    std::stable_sort(start, end, [](const int& a, const int& b) {
         return globalWords[a].substr(2) < globalWords[b].substr(2);
     });
 
