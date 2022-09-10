@@ -1,13 +1,33 @@
+#include <unistd.h>
+
+#include <csignal>
 #include <filesystem>
 #include <iostream>
 
 #include "../common/Profiler.h"
+#include "../common/constants.h"
 #include "../common/print.h"
 #include "../common/time.h"
 #include "../task1/Task1.h"
 #include "Task2.h"
 
+void parentHandler(int signum) {
+    std::cerr << utility::timestamp() << "The program has exceeded the maximum time limit of "
+              << constants::TIME_LIMIT << " seconds." << std::endl;
+
+    for (auto child : children) {
+        std::cerr << utility::timestamp() << "Child with pid " << child
+                  << " is being signalled to exit." << std::endl;
+        kill(child, signum);
+    }
+    std::cerr << utility::timestamp() << "All children exited. Parent is now exiting." << std::endl;
+    exit(signum);
+}
+
 int main(int argc, char **argv) {
+    alarm(constants::TIME_LIMIT);
+    signal(SIGALRM, parentHandler);
+
     if (argc != 3) {
         std::cout << utility::timestamp() << "Two arguments are required, but " << argc - 1
                   << " were provided." << std::endl;

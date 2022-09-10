@@ -15,4 +15,6 @@ class Task2 {
     std::string m_wordlist;
 };
 
+extern std::vector<pid_t> children;
+
 #endif  // Task2.h

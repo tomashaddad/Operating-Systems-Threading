@@ -12,12 +12,21 @@
 #include <wait.h>
 
 #include <algorithm>
+#include <cstring>
 #include <iterator>
 
 #include "../common/constants.h"
 #include "../common/readwrite.h"
 #include "../common/sort.h"
 #include "../common/time.h"
+
+std::vector<pid_t> children;
+
+void childHandler(int signum) {
+    std::cout << utility::timestamp() << "Child with pid " << getpid() << " caught signal "
+              << strsignal(signum) << ". Aborting ..." << std::endl;
+    exit(signum);
+}
 
 Task2::Task2(const std::string &wordlist) : m_wordlist(wordlist) {
     std::ifstream in(wordlist);
@@ -35,9 +44,13 @@ void Task2::map2() {
         pid = fork();
         if (pid > 0)  // parent
         {
+            children.push_back(pid);
             continue;
         } else if (pid == 0)  // child
         {
+            alarm(0);                       // disable alarm inherited from parent
+            signal(SIGALRM, childHandler);  // override parent's signal handler
+
             std::cout << utility::timestamp() << "Child (PID " << getpid()
                       << ") created and delegated to " << i << " character strings. Creating ..."
                       << std::endl;
