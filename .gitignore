@@ -8,6 +8,7 @@ valgrind*.txt
 wordlists/
 src/task2/sorted/*
 src/task3/sorted/*
+Runner.sh
 
 ### C++ ###
 # Prerequisites
