@@ -37,6 +37,9 @@ struct ReduceData {
 };
 
 void* sort(void* arg) {
+    Profiler profiler;
+    profiler.start();
+
     ThreadData* data = (ThreadData*)arg;
 
     auto start = std::begin(data->indices);
@@ -64,6 +67,11 @@ void* sort(void* arg) {
     }
 
     close(descriptor);
+
+    profiler.stop();
+
+    std::cout << utility::timestamp() << "Map3 sort for words of length " << data->length
+              << " took " << profiler.getDuration() << " ms" << std::endl;
 
     return data;
 }
