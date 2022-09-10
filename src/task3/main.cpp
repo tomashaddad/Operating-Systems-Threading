@@ -5,6 +5,8 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <csignal>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -26,6 +28,8 @@ pthread_mutex_t g_mutexDescriptors;
 pthread_cond_t g_condFifosReady;
 int g_counter = 0;
 
+int alarmFired = 0;
+
 struct ThreadData {
     int length;
     std::vector<int>& indices;
@@ -35,6 +39,19 @@ struct ReduceData {
     int length;
     std::vector<std::string>& words;
 };
+
+void signalHandler(int signum) {
+    std::cerr << utility::timestamp() << "The program has exceeded the maximum time limit of "
+              << constants::TIME_LIMIT << " seconds." << std::endl;
+    std::cerr << utility::timestamp()
+              << "Threads will now destroy their resources, and the process will exit."
+              << std::endl;
+
+    std::cout << "Alarm: " << alarmFired << std::endl;
+
+    alarmFired = 1;
+    std::cout << "Alarm: " << alarmFired << std::endl;
+}
 
 void* sort(void* arg) {
     Profiler profiler;
@@ -62,6 +79,11 @@ void* sort(void* arg) {
     auto descriptor = open(fifo_cstr, O_WRONLY);
     int counter = 0;
     for (auto i : data->indices) {
+        if (alarmFired) {
+            std::cout << "Sort thread for words " << data->length << " signalled to stop."
+                      << std::endl;
+            break;
+        }
         write(descriptor, globalWords[i].c_str(), globalWords[i].size());
         counter++;
     }
@@ -121,6 +143,11 @@ void* readFifo(void* arg) {
 
     while (true) {
         if (read(descriptor, word, sizeof(char) * data->length)) {
+            if (alarmFired) {
+                std::cout << "Read thread for words " << data->length << " signalled to stop."
+                          << std::endl;
+                break;
+            }
             data->words.push_back(std::string(word));
         } else {
             // Finished reading from FIFO
@@ -170,6 +197,9 @@ void* reduce3(void* arg) {
 }
 
 int main(int argc, char** argv) {
+    alarm(constants::TIME_LIMIT);
+    signal(SIGALRM, signalHandler);
+
     if (argc != 3) {
         std::cout << utility::timestamp() << "Two arguments are required, but " << argc - 1
                   << " were provided." << std::endl;
@@ -195,6 +225,8 @@ int main(int argc, char** argv) {
 
     pthread_t map, reduce;
 
+    pthread_mutex_init(&g_mutexDescriptors, NULL);
+
     if (pthread_create(&map, NULL, &map3, NULL)) {
         std::cout << utility::timestamp() << "Error creating map3 thread" << std::endl;
         return EXIT_FAILURE;
@@ -214,6 +246,8 @@ int main(int argc, char** argv) {
         std::cout << utility::timestamp() << "Error joining reduce3 thread" << std::endl;
         return EXIT_FAILURE;
     }
+
+    pthread_mutex_destroy(&g_mutexDescriptors);
 
     profiler.stop();
 

@@ -65,7 +65,7 @@ $(TASK2_TARGET): $(COMMON_OBJ) $(filter-out obj/task1/main.o, $(TASK1_OBJ)) $(TA
 	$(CC) -o $@ $^ $(CCFLAGS)
 
 $(TASK3_TARGET): $(COMMON_OBJ) $(filter-out obj/task1/main.o, $(TASK1_OBJ)) $(TASK3_OBJ)
-	$(CC) -o $@ $^ $(CCFLAGS)
+	$(CC) -pthread -o $@ $^ $(CCFLAGS)
 
 ######### COMPILING TASKS
 
@@ -76,7 +76,7 @@ $(OBJ_PATH)/task2/%.o: $(TASK2_DIR)/%.cpp
 	$(CC) $(CCOBJFLAGS) -o $@ $<
 
 $(OBJ_PATH)/task3/%.o: $(TASK3_DIR)/%.cpp
-	$(CC) $(CCOBJFLAGS) -o $@ $<
+	$(CC) -pthread $(CCOBJFLAGS) -o $@ $<
 
 $(OBJ_PATH)/common/%.o: $(COMMON_DIR)/%.cpp
 	$(CC) $(CCOBJFLAGS) -o $@ $<
