@@ -23,12 +23,13 @@
 #include "../task1/Task1.h"
 
 std::vector<std::string> globalWords;
+std::map<int, int> wordLengths;
 
 pthread_mutex_t g_mutexDescriptors;
 pthread_cond_t g_condFifosReady;
 int g_counter = 0;
 
-int alarmFired = 0;
+bool alarmFired = false;
 
 struct ThreadData {
     int length;
@@ -47,10 +48,7 @@ void signalHandler(int signum) {
               << "Threads will now destroy their resources, and the process will exit."
               << std::endl;
 
-    std::cout << "Alarm: " << alarmFired << std::endl;
-
-    alarmFired = 1;
-    std::cout << "Alarm: " << alarmFired << std::endl;
+    alarmFired = true;
 }
 
 void* sort(void* arg) {
@@ -106,6 +104,10 @@ void* map3(void* arg) {
 
     for (std::size_t i = 0; i < globalWords.size(); ++i) {
         indices[globalWords[i].length()].push_back(i);
+    }
+
+    for (const auto& pair : indices) {
+        wordLengths[pair.first] = pair.second.size();
     }
 
     for (int length = constants::MIN_LENGTH; length <= constants::MAX_LENGTH; ++length) {
@@ -228,22 +230,22 @@ int main(int argc, char** argv) {
     pthread_mutex_init(&g_mutexDescriptors, NULL);
 
     if (pthread_create(&map, NULL, &map3, NULL)) {
-        std::cout << utility::timestamp() << "Error creating map3 thread" << std::endl;
+        std::cerr << utility::timestamp() << "Error creating map3 thread" << std::endl;
         return EXIT_FAILURE;
     }
 
     if (pthread_create(&reduce, NULL, &reduce3, NULL)) {
-        std::cout << utility::timestamp() << "Error creating reduce3 thread" << std::endl;
+        std::cerr << utility::timestamp() << "Error creating reduce3 thread" << std::endl;
         return EXIT_FAILURE;
     }
 
     if (pthread_join(map, NULL)) {
-        std::cout << utility::timestamp() << "Error joining map3 thread" << std::endl;
+        std::cerr << utility::timestamp() << "Error joining map3 thread" << std::endl;
         return EXIT_FAILURE;
     }
 
     if (pthread_join(reduce, NULL)) {
-        std::cout << utility::timestamp() << "Error joining reduce3 thread" << std::endl;
+        std::cerr << utility::timestamp() << "Error joining reduce3 thread" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -253,6 +255,14 @@ int main(int argc, char** argv) {
 
     std::cout << utility::timestamp() << "Program executed in " << profiler.getDuration() << " ms."
               << std::endl;
+
+    std::cout << utility::timestamp() << "Word statistics: " << std::endl;
+
+    for (const auto& pair : wordLengths) {
+        std::cout << utility::timestamp() << "Length " << pair.first << ": " << pair.second
+                  << " words (" << (100 * pair.second / globalWords.size()) << "% of total words"
+                  << std::endl;
+    }
 
     return EXIT_SUCCESS;
 }
