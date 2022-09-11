@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <pthread.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -23,12 +24,13 @@
 #include "../task1/Task1.h"
 
 std::vector<std::string> globalWords;
+std::map<int, int> wordLengths;
 
 pthread_mutex_t g_mutexDescriptors;
 pthread_cond_t g_condFifosReady;
 int g_counter = 0;
 
-int alarmFired = 0;
+bool alarmFired = false;
 
 struct ThreadData {
     int length;
@@ -47,10 +49,55 @@ void signalHandler(int signum) {
               << "Threads will now destroy their resources, and the process will exit."
               << std::endl;
 
-    std::cout << "Alarm: " << alarmFired << std::endl;
+    alarmFired = true;
+}
 
-    alarmFired = 1;
-    std::cout << "Alarm: " << alarmFired << std::endl;
+int setThreadPriority(int length) {
+    int prio = 0;
+
+    switch (length) {
+        case 3:
+            prio = -3;
+            break;
+        case 4:
+            prio = 6;
+            break;
+        case 5:
+            prio = 14;
+            break;
+        case 6:
+            prio = 18;
+            break;
+        case 7:
+            prio = 19;
+            break;
+        case 8:
+            prio = 19;
+            break;
+        case 9:
+            prio = 18;
+            break;
+        case 10:
+            prio = 16;
+            break;
+        case 11:
+            prio = 12;
+            break;
+        case 12:
+            prio = 9;
+            break;
+        case 13:
+            prio = 5;
+            break;
+        case 14:
+            prio = 1;
+            break;
+        case 15:
+            prio = 0;
+            break;
+    }
+
+    return setpriority(PRIO_PROCESS, 0, prio);
 }
 
 void* sort(void* arg) {
@@ -58,6 +105,11 @@ void* sort(void* arg) {
     profiler.start();
 
     ThreadData* data = (ThreadData*)arg;
+
+    setThreadPriority(data->length);
+
+    std::cout << "Thread for word length " << data->length
+              << " given nice value: " << getpriority(PRIO_PROCESS, 0) << std::endl;
 
     auto start = std::begin(data->indices);
     auto end = std::end(data->indices);
@@ -67,7 +119,7 @@ void* sort(void* arg) {
         return globalWords[a].substr(2) < globalWords[b].substr(2);
     });
 
-    std::string fifo = "src/task3/sorted/sorted_" + std::to_string(data->length);
+    std::string fifo = "src/task4/sorted/sorted_" + std::to_string(data->length);
     const char* fifo_cstr = fifo.c_str();
 
     mkfifo(fifo_cstr, 0666);
@@ -108,6 +160,10 @@ void* map3(void* arg) {
         indices[globalWords[i].length()].push_back(i);
     }
 
+    for (const auto& pair : indices) {
+        wordLengths[pair.first] = pair.second.size();
+    }
+
     for (int length = constants::MIN_LENGTH; length <= constants::MAX_LENGTH; ++length) {
         ThreadData* data = new ThreadData{length, indices[length]};
         pthread_create(&threads[length - constants::MIN_LENGTH], NULL, &sort, data);
@@ -128,7 +184,7 @@ void* map3(void* arg) {
 void* readFifo(void* arg) {
     ReduceData* data = (ReduceData*)arg;
 
-    std::string fifo = "src/task3/sorted/sorted_" + std::to_string(data->length);
+    std::string fifo = "src/task4/sorted/sorted_" + std::to_string(data->length);
     std::cout << utility::timestamp() << "Reading from " << fifo << std::endl;
 
     auto descriptor = open(fifo.c_str(), O_RDONLY);
@@ -191,7 +247,7 @@ void* reduce3(void* arg) {
         delete reduceData;
     }
 
-    utility::mergeAndOutput(sortedLists, "src/task3/sorted/sorted.txt");
+    utility::mergeAndOutput(sortedLists, "src/task4/sorted/sorted.txt");
 
     return 0;
 }
@@ -228,22 +284,22 @@ int main(int argc, char** argv) {
     pthread_mutex_init(&g_mutexDescriptors, NULL);
 
     if (pthread_create(&map, NULL, &map3, NULL)) {
-        std::cout << utility::timestamp() << "Error creating map3 thread" << std::endl;
+        std::cerr << utility::timestamp() << "Error creating map3 thread" << std::endl;
         return EXIT_FAILURE;
     }
 
     if (pthread_create(&reduce, NULL, &reduce3, NULL)) {
-        std::cout << utility::timestamp() << "Error creating reduce3 thread" << std::endl;
+        std::cerr << utility::timestamp() << "Error creating reduce3 thread" << std::endl;
         return EXIT_FAILURE;
     }
 
     if (pthread_join(map, NULL)) {
-        std::cout << utility::timestamp() << "Error joining map3 thread" << std::endl;
+        std::cerr << utility::timestamp() << "Error joining map3 thread" << std::endl;
         return EXIT_FAILURE;
     }
 
     if (pthread_join(reduce, NULL)) {
-        std::cout << utility::timestamp() << "Error joining reduce3 thread" << std::endl;
+        std::cerr << utility::timestamp() << "Error joining reduce3 thread" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -253,6 +309,14 @@ int main(int argc, char** argv) {
 
     std::cout << utility::timestamp() << "Program executed in " << profiler.getDuration() << " ms."
               << std::endl;
+
+    std::cout << utility::timestamp() << "Word statistics: " << std::endl;
+
+    for (const auto& pair : wordLengths) {
+        std::cout << utility::timestamp() << "Length " << pair.first << ": " << pair.second
+                  << " words (" << (100 * pair.second / globalWords.size()) << "% of total words"
+                  << std::endl;
+    }
 
     return EXIT_SUCCESS;
 }
