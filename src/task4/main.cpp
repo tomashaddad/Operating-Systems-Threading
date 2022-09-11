@@ -197,7 +197,7 @@ void* readFifo(void* arg) {
         return data;
     }
 
-    char* word = new char[data->length];
+    char* word = new char[constants::BUFFER_SIZE]();
 
     while (true) {
         if (read(descriptor, word, sizeof(char) * data->length)) {
@@ -214,7 +214,7 @@ void* readFifo(void* arg) {
     }
 
     close(descriptor);
-    delete word;
+    delete[] word;
 
     std::cout << utility::timestamp() << "Successfully read " << data->words.size()
               << " words from " << fifo << std::endl;
@@ -316,7 +316,7 @@ int main(int argc, char** argv) {
 
     for (const auto& pair : wordLengths) {
         std::cout << utility::timestamp() << "Length " << pair.first << ": " << pair.second
-                  << " words (" << (100 * pair.second / globalWords.size()) << "% of total words"
+                  << " words (" << (100 * pair.second / globalWords.size()) << "% of total words)"
                   << std::endl;
     }
 
