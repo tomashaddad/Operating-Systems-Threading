@@ -57,16 +57,16 @@ int setThreadPriority(int length) {
 
     switch (length) {
         case 3:
-            prio = -3;
+            prio = 0;
             break;
         case 4:
-            prio = 6;
+            prio = 13;
             break;
         case 5:
             prio = 14;
             break;
         case 6:
-            prio = 18;
+            prio = 19;
             break;
         case 7:
             prio = 19;
@@ -81,22 +81,24 @@ int setThreadPriority(int length) {
             prio = 16;
             break;
         case 11:
-            prio = 12;
+            prio = 9;
             break;
         case 12:
-            prio = 9;
+            prio = 6;
             break;
         case 13:
             prio = 5;
             break;
         case 14:
-            prio = 1;
+            prio = 3;
             break;
         case 15:
-            prio = 0;
+            prio = 4;
             break;
     }
 
+    // nice(prio);
+    // setpriority(PRIO_PROCESS, gettid(), prio);
     return setpriority(PRIO_PROCESS, 0, prio);
 }
 
