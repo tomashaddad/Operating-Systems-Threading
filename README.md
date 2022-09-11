@@ -1,7 +1,5 @@
 # Instructions
 
-First run `make makedir` to create bin, obj, and sorted folders for each task.
-
 All commands shown are relative to the root directory of the project.
 
 ## Creating folders
