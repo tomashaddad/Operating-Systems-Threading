@@ -46,7 +46,7 @@ TASK4_OBJ := $(call format_obj,task4,$(TASK4_CPP))
 COMMON_OBJ := $(call format_obj,common,$(COMMON_CPP))
 
 makedir:
-	@mkdir -p $(BIN_PATH) $(OBJ_PATHS)
+	@mkdir -p $(BIN_PATH) $(OBJ_PATHS) src/task2/sorted src/task3/sorted src/task4/sorted
 
 task1: $(TASK1_TARGET)
 task2: $(TASK2_TARGET)
